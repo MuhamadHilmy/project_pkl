@@ -1,26 +1,34 @@
 <?php
+  session_start();
   require 'koneksi.php';
 ?>
 <!DOCTYPE html>
 <html>
   <head>
+    <title>Home-SmartCounter</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="js/sweetalert.min.js"></script>
+    <link rel="icon" href="images/logo-sc-blue.png" sizes="32x32">
     <!--Import Google Icon Font-->
     <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!--Import materialize.css-->
     <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
-    <script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/sweetalert.css">
     <!--Let browser know website is optimized for mobile-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <style type="text/css">
     #appname{
-      position: fixed;
       left: 65px;
     }
-    .nav-wrapper{
-      background-color: #3498db;
+    #slide-out{
+      position: fixed;
+    }
+    nav{
+      background-color: #3498db;  
     }
     #menu{
       background-color: #3498db;
+      position: fixed;
     }
     .side-nav{
       top: 64px;
@@ -28,6 +36,9 @@
     }
     .container{
       margin-left: 300px;
+    }
+    #slide-out{
+      position: fixed;
     }
     #tb{
       width: 100%;
@@ -52,10 +63,9 @@
   <!-- Modal Pictures -->
       <div id="modalp" class="modal modal-fixed-footer" style="height: 230px; width: 550px; margin-top: 50px;">
         <form method="post" action="" enctype="multipart/form-data">
-          <div class="modal-header" style="height: 50px; margin-top: 10px;">
-            <h4>Change Picture</h4>
-          </div>
           <div class="modal-content" style="height: auto;">
+            <h4>Change Picture</h4>
+            <h1> </h1>
             <div id="images"></div>
             <div class="file-field input-field">
               <div class="btn">
@@ -73,6 +83,23 @@
           </div>
         </form>
       </div>
+
+  <?php
+     if(isset($_POST['upload']))
+     {
+      $name_p = $_FILES['user_image']['name'];
+      $sumber_p = $_FILES['user_image']['tmp_name'];
+      $fn = $_SESSION['fullname'];
+
+      $folder = 'images/'; // upload directory
+      move_uploaded_file($sumber_p,$folder.$name_p);
+        
+       $stmt = $con->prepare('UPDATE user set pic = :upic WHERE fullname = :fn');
+       $stmt->bindParam(':upic',$name_p);
+       $stmt->bindParam(':fn',$fn);
+       $stmt->execute();
+     }
+    ?>
 
   <!-- Modal Add -->
   <div id="modal1" class="modal modal-fixed-footer">
@@ -126,15 +153,17 @@
   </div>
 
    <!-- Nav-Bar -->
-    <nav>
-      <div class="nav-wrapper">
-        <img id="logo" src="images/logo-sc.png">
-        <a id="appname" href="#!" class="brand-logo">SmartCounter</a>
-        <ul class="right">
-          <li><a href="login.php"><i class="material-icons">exit_to_app</i></a></li>
-        </ul>
-      </div>
-    </nav>
+    <div class="navbar-fixed">
+      <nav>
+        <div class="nav-wrapper">
+          <img id="logo" src="images/logo-sc.png">
+          <a id="appname" href="index.php" class="brand-logo">SmartCounter</a>
+          <ul class="right hide-on-med-and-down">
+            <li><a id="logout" class="tooltipped" data-delay="0" data-position="left" data-tooltip="Logout"><i class="material-icons">exit_to_app</i></a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
 
     <!-- side-nav-bar -->
     <ul id="slide-out" class="side-nav fixed">
@@ -142,12 +171,38 @@
         <div class="background">
           <img class="responsive-img" src="images/bg.png">
         </div>
-        <a href="#modalp"><img class="circle" src="images/user.png"></a>
-        <a href="#"><span class="white-text name">John Doe</span></a>
-        <a href="#"><span class="white-text email">jdandturk@gmail.com</span></a>
+        <?php
+            $fn = $_SESSION['fullname'];
+            $stmt = $con->prepare('SELECT * FROM user WHERE fullname = :fn');
+            $stmt->bindParam(':fn',$fn);
+            $stmt->execute();
+            $result= $stmt->fetchAll();
+            foreach ($result as $row) {
+        ?>
+        <a href="#modalp"><img class="circle" src="images/<?php echo $row['pic']; ?>"></a>
+        <?php
+            }
+        ?>
+        <a href="#"><span class="white-text name"><?php echo $_SESSION['fullname']; ?></span></a>
+        <a href="#"><span class="white-text email">Administrator</span></a>
       </div></li>
       <li><a href="index.php"><i class="material-icons">home</i>Home</a></li>
-      <li><a href="harga.php"><i class="material-icons">account_balance_wallet</i>Set Price</a></li>
+      <li><a href="price.php"><i class="material-icons">account_balance_wallet</i>Set Price</a></li>
+      <li class="no-padding">
+        <ul class="collapsible collapsible-accordion">
+          <li>
+            <a class="collapsible-header" style="margin-left: 16.5px;"><i class="material-icons">description</i>Report</a>
+            <div class="collapsible-body">
+              <ul>
+                <li><a href="pdfToday.php">Today</a></li>
+                <li><a href="pdfWeek.php">This Week</a></li>
+                <li><a href="pdfMonth.php">This Month</a></li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+      </li>
+      <li><a href="setting.php"><i class="material-icons">settings</i>Setting</a></li>
     </ul>
     <a id="menu" href="#" data-activates="slide-out" class="button-collapse waves-effect btn-floating"><i class="material-icons">menu</i></a>
 
@@ -172,7 +227,7 @@
                 <th style="width: 80px;">Action</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="tbody">
           </tbody>
         </table>
       </form>
@@ -241,7 +296,7 @@
             type: "GET",
             url: "connect.php",
             success: function(data){
-              $('tbody').html(data);
+              $('#tbody').html(data);
             }
           });
         }
@@ -252,7 +307,7 @@
             url: "connect.php?p=show",
             data: "name="+nama,
             success: function(data){
-              $('tbody').html(data);
+              $('#tbody').html(data);
             }
           });
         }
@@ -288,10 +343,27 @@
         });
         $('.modal').modal();
         $('select').material_select();
+        $('#logout').click(function(){
+              swal({
+                    title: "Are you sure?",
+                    text: "You will logout!",
+                    type: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#DD6B55",
+                    confirmButtonText: "Yes",
+                    cancelButtonText: "No",
+                    closeOnConfirm: false,
+                    closeOnCancel: true
+                  },
+                  function(isConfirm){
+                    if (isConfirm) {
+                      window.location.href="login.php";
+                    }
+                  });
+            });
       });
     </script>
     <!--Import jQuery before materialize.js-->
-    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script type="text/javascript" src="js/materialize.min.js"></script>
   </body>
 </html>

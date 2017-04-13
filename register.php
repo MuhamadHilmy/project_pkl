@@ -7,13 +7,13 @@
 	<title>Register Form</title>
 	<link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link type="text/css" rel="stylesheet" href="css/materialize.css"/>
-    <link rel="icon" href="img/bbgfix.png" sizes="32x32">
+    <link rel="icon" href="images/logo-sc-blue.png" sizes="32x32">
     <script src="js/sweetalert.min.js"></script>
     <link rel="stylesheet" type="text/css" href="css/sweetalert.css">
     <style type="text/css">
     	body{
 			margin: 0 auto;
-			background-image: url("images/bg-log.png");
+			background-image: url("images/bgs.png");
 			background-repeat: no-repeat;
 			background-size: 100% 720px;
 		}
@@ -81,7 +81,7 @@
 			{
 				$fullname = $_POST['fullname'];
 				$username = $_POST['username'];
-				$password = $_POST['password'];
+				$password = md5($_POST['password']);
 				$upic = "user.png";
 
 				$insert = $con->prepare("SELECT * FROM user WHERE username = '".$username."'");

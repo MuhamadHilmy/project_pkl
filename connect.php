@@ -1,5 +1,6 @@
 <?php
-
+		
+		session_start();
 		$con = new PDO('mysql:host=localhost;dbname=sapp','root','root');
 		$page = isset($_GET['p'])?$_GET['p']:'';
 		if($page == 'add')
@@ -10,30 +11,34 @@
 			$co = $_POST['co'];
 			$hg = $_POST['hg'];
 			$date = $_POST['transaction_date'];
+			$uid = $_SESSION['uid'];
 			if($hg == ""){
 
 			}else{
-			$query	= $con->prepare("INSERT INTO transaction(fullname,phone_number,operator,kode,harga,transaction_date) values(:name, :number, :op, :co, :hg, :date)");
+			$query	= $con->prepare("INSERT INTO transaction(fullname,phone_number,operator,kode,harga,transaction_date,uid) values(:name, :number, :op, :co, :hg, :date, :uid)");
 			$result	= $query->execute(array(
 				":name" 	=> $name,
 				":number"	=> $number,
 				":op"	=> $op,
 				":co"	=> $co,
 				":hg"	=> $hg,
+				":uid"	=> $uid,
 				":date"	=> $date
 			));
 			}
 		}
 		else if($page == 'addHarga')
 		{
-			$sc   = $_POST['sc'];
+			$sc = $_POST['sc'];
 			$cd = $_POST['cd'];
 			$mn = $_POST['mn'];
+			$uid = $_SESSION['uid'];
 
-			$query	= $con->prepare("INSERT INTO harga(operator,kode,harga) values(:name, :number, :date)");
+			$query	= $con->prepare("INSERT INTO harga(operator,kode,harga,uid) values(:name, :number, :date, :uid)");
 			$result	= $query->execute(array(
 					":name" 	=> $sc,
 					":number"	=> $cd,
+					":uid"	=> $uid,
 					":date"	=> $mn
 					));
 		}
@@ -82,8 +87,9 @@
 		else if($page == "show")
 		{
 			$name = $_GET['name'];
+			$uid = $_SESSION['uid'];
 			if($name != ""){
-				$query = $con->prepare('SELECT * FROM transaction WHERE fullname LIKE "%'.$_GET['name'].'%"');
+				$query = $con->prepare('SELECT * FROM transaction WHERE fullname LIKE "%'.$_GET['name'].'%" and uid = "'.$uid.'"');
 	            $query->execute(array(':name' => $name));
 	            while($result = $query->fetch()){
             ?>
@@ -93,7 +99,7 @@
               <td><?php echo $result['phone_number']; ?></td>
               <td><?php echo $result['operator']; ?></td>
               <td><?php echo $result['kode']; ?></td>
-              <td><?php echo $result['harga']; ?></td>
+              <td><?php echo money_format("%.0n", $result['harga']); ?></td>
               <td><?php echo $result['transaction_date']; ?></td>
               <td>
                 <div>
@@ -105,7 +111,7 @@
             	}
             }
             else{
-				$query = $con->prepare('SELECT * FROM transaction');
+				$query = $con->prepare('SELECT * FROM transaction WHERE uid = "'.$uid.'"');
 	            $query->execute();
 	            while($result = $query->fetch()){
 
@@ -116,7 +122,7 @@
               <td><?php echo $result['phone_number']; ?></td>
               <td><?php echo $result['operator']; ?></td>
               <td><?php echo $result['kode']; ?></td>
-              <td><?php echo $result['harga']; ?></td>
+              <td><?php echo money_format("%.0n", $result['harga']); ?></td>
               <td><?php echo $result['transaction_date']; ?></td>
               <td>
                 <div>
@@ -131,16 +137,17 @@
 		else if($page == "shows")
 		{
 			$name = $_GET['name'];
+			$uid = $_SESSION['uid'];
 			if($name != ""){
-				$query = $con->prepare('SELECT * FROM harga WHERE operator LIKE "%'.$_GET['name'].'%"');
-	            $query->execute(array(':name' => $name));
+				$query = $con->prepare('SELECT * FROM harga WHERE operator LIKE "%'.$_GET['name'].'%" and uid = "'.$uid.'"');
+	            $query->execute();
 	            while($result = $query->fetch()){
             ?>
             <tr>
               <td><?php echo $result['id']; ?></td>
               <td><?php echo $result['operator']; ?></td>
               <td><?php echo $result['kode']; ?></td>
-              <td><?php echo $result['harga']; ?></td>
+              <td><?php echo money_format("%.0n", $result['harga']); ?></td>
               <td>
                 <div>
                   <a href="#modal2-<?php echo $result['id']; ?>" class="btn-floating waves-effect waves-light yellow"><i class="material-icons left">edit</i>Edit</a>
@@ -183,7 +190,7 @@
             	}
             }
             else{
-				$query = $con->prepare('SELECT * FROM harga');
+				$query = $con->prepare('SELECT * FROM harga WHERE uid = "'.$uid.'"');
 	            $query->execute();
 	            while($result = $query->fetch()){
 
@@ -192,7 +199,7 @@
               <td><?php echo $result['id']; ?></td>
               <td><?php echo $result['operator']; ?></td>
               <td><?php echo $result['kode']; ?></td>
-              <td><?php echo $result['harga']; ?></td>
+              <td><?php echo money_format("%.0n", $result['harga']); ?></td>
               <td>
               	<!-- Modal -->
 		        <div id="modal2-<?php echo $result['id']; ?>" style="height: 400px;" class="modal modal-fixed-footer">
@@ -238,7 +245,8 @@
 		else if($page == "ss")
 		{
 			$name = $_GET['co'];
-				$query = $con->prepare('SELECT * FROM harga WHERE kode = :co');
+			$uid = $_SESSION['uid'];
+				$query = $con->prepare('SELECT * FROM harga WHERE kode = :co and uid = "'.$uid.'"');
 	            $query->execute(array(':co' => $name));
 	            while($result = $query->fetch()){
 	        ?>
@@ -250,8 +258,12 @@
 		else if($page == "showsel")
 		{
 			$name = $_GET['op'];
+			$uid = $_SESSION['uid'];
 			if($name != "Choose your operator"){
-				$query = $con->prepare('SELECT * FROM harga WHERE operator = :op');
+			?>
+			<option value="" disabled selected>Select code</option>
+			<?php
+				$query = $con->prepare('SELECT * FROM harga WHERE operator = :op and uid = "'.$uid.'"');
 	            $query->execute(array(':op' => $name));
 	            while($result = $query->fetch()){
             ?>
@@ -277,7 +289,8 @@
 		}
 		else if($page == "sh")
             {
-            	$query = $con->prepare('SELECT * FROM harga');
+            	$uid = $_SESSION['uid'];
+            	$query = $con->prepare('SELECT * FROM harga WHERE uid = "'.$uid.'"');
 	            $query->execute();
 	            while($result = $query->fetch()){
             ?>
@@ -285,7 +298,7 @@
               <td><?php echo $result['id']; ?></td>
               <td><?php echo $result['operator']; ?></td>
               <td><?php echo $result['kode']; ?></td>
-              <td><?php echo $result['harga']; ?></td>
+              <td><?php echo money_format("%.0n", $result['harga']); ?></td>
               <td>
                 <div>
                   <a href="#modal2-<?php echo $result['id']; ?>" class="btn-trigger btn-floating waves-effect waves-light yellow"><i class="material-icons left">edit</i>Edit</a>
@@ -329,7 +342,8 @@
             }
 		else
 		{
-			$query = $con->prepare('SELECT * FROM transaction');
+			$uid = $_SESSION['uid'];
+			$query = $con->prepare('SELECT * FROM transaction WHERE uid = "'.$uid.'"');
             $query->execute();
             while($result = $query->fetch()){
             ?>
@@ -339,7 +353,7 @@
               <td><?php echo $result['phone_number']; ?></td>
               <td><?php echo $result['operator']; ?></td>
               <td><?php echo $result['kode']; ?></td>
-              <td><?php echo $result['harga']; ?></td>
+              <td><?php echo money_format("%.0n", $result['harga']); ?></td>
               <td><?php echo $result['transaction_date']; ?></td>
               <td>
                 <div>
